@@ -5,6 +5,8 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Routing;
 using SimpleCQRS;
+using Autofac;
+using System.Reflection;
 
 namespace CQRSGui
 {
@@ -31,27 +33,34 @@ namespace CQRSGui
 
             RegisterRoutes(RouteTable.Routes);
 
-            var bus = new FakeBus();
+            var bulder = new ContainerBuilder();
 
-            var storage = new EventStore(bus);
-            var rep = new Repository<InventoryItem>(storage);
-            var commands = new InventoryCommandHandlers(rep);
-            bus.RegisterHandler<CheckInItemsToInventory>(commands.Handle);
-            bus.RegisterHandler<CreateInventoryItem>(commands.Handle);
-            bus.RegisterHandler<DeactivateInventoryItem>(commands.Handle);
-            bus.RegisterHandler<RemoveItemsFromInventory>(commands.Handle);
-            bus.RegisterHandler<RenameInventoryItem>(commands.Handle);
+            var eventPublisher = new EventPublisher();
             var detail = new InventoryItemDetailView();
-            bus.RegisterHandler<InventoryItemCreated>(detail.Handle);
-            bus.RegisterHandler<InventoryItemDeactivated>(detail.Handle);
-            bus.RegisterHandler<InventoryItemRenamed>(detail.Handle);
-            bus.RegisterHandler<ItemsCheckedInToInventory>(detail.Handle);
-            bus.RegisterHandler<ItemsRemovedFromInventory>(detail.Handle);
+            eventPublisher.RegisterHandler<InventoryItemCreated>(detail.Handle);
+            eventPublisher.RegisterHandler<InventoryItemDeactivated>(detail.Handle);
+            eventPublisher.RegisterHandler<InventoryItemRenamed>(detail.Handle);
+            eventPublisher.RegisterHandler<ItemsCheckedInToInventory>(detail.Handle);
+            eventPublisher.RegisterHandler<ItemsRemovedFromInventory>(detail.Handle);
             var list = new InventoryListView();
-            bus.RegisterHandler<InventoryItemCreated>(list.Handle);
-            bus.RegisterHandler<InventoryItemRenamed>(list.Handle);
-            bus.RegisterHandler<InventoryItemDeactivated>(list.Handle);
-            ServiceLocator.Bus = bus;
+            eventPublisher.RegisterHandler<InventoryItemCreated>(list.Handle);
+            eventPublisher.RegisterHandler<InventoryItemRenamed>(list.Handle);
+            eventPublisher.RegisterHandler<InventoryItemDeactivated>(list.Handle);
+
+            bulder.RegisterInstance<IEventPublisher>(eventPublisher).SingleInstance();
+
+            bulder.RegisterType<EventStore>().As<IEventStore>().AsImplementedInterfaces();
+            bulder.RegisterType<Repository>().As<IRepository>().AsImplementedInterfaces();
+
+            var reg = bulder.RegisterType<InventoryCommandHandlers>().As<InventoryCommandHandlers>().SingleInstance();
+
+            var commandService = new CommandService();
+            bulder.RegisterInstance<ICommandSender>(commandService).SingleInstance();
+            IocContainer.RegisterServices(bulder);
+
+            commandService.Initialize(new[] { Assembly.Load("SimpleCQRS") });
+
+
         }
     }
 }

@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Web.Mvc;
 using SimpleCQRS;
+using Autofac;
 
 namespace CQRSGui.Controllers
 {
     [HandleError]
     public class HomeController : Controller
     {
-        private FakeBus _bus;
+        private ICommandSender _commandService;
         private ReadModelFacade _readmodel;
 
         public HomeController()
         {
-            _bus = ServiceLocator.Bus;
+            _commandService = IocContainer.Container.Resolve<ICommandSender>();
             _readmodel = new ReadModelFacade();
         }
 
@@ -37,7 +38,7 @@ namespace CQRSGui.Controllers
         [HttpPost]
         public ActionResult Add(string name)
         {
-            _bus.Send(new CreateInventoryItem(Guid.NewGuid(), name));
+            _commandService.Send(new CreateInventoryItem(Guid.NewGuid(), name));
 
             return RedirectToAction("Index");
         }
@@ -52,7 +53,7 @@ namespace CQRSGui.Controllers
         public ActionResult ChangeName(Guid id, string name, int version)
         {
             var command = new RenameInventoryItem(id, name, version);
-            _bus.Send(command);
+            _commandService.Send(command);
 
             return RedirectToAction("Index");
         }
@@ -66,7 +67,7 @@ namespace CQRSGui.Controllers
         [HttpPost]
         public ActionResult Deactivate(Guid id, int version)
         {
-            _bus.Send(new DeactivateInventoryItem(id, version));
+            _commandService.Send(new DeactivateInventoryItem(id, version));
             return RedirectToAction("Index");
         }
 
@@ -79,7 +80,7 @@ namespace CQRSGui.Controllers
         [HttpPost]
         public ActionResult CheckIn(Guid id, int number, int version)
         {
-            _bus.Send(new CheckInItemsToInventory(id, number, version));
+            _commandService.Send(new CheckInItemsToInventory(id, number, version));
             return RedirectToAction("Index");
         }
 
@@ -92,7 +93,7 @@ namespace CQRSGui.Controllers
         [HttpPost]
         public ActionResult Remove(Guid id, int number, int version)
         {
-            _bus.Send(new RemoveItemsFromInventory(id, number, version));
+            _commandService.Send(new RemoveItemsFromInventory(id, number, version));
             return RedirectToAction("Index");
         }
     }

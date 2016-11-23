@@ -34,13 +34,13 @@ namespace SimpleCQRS
 
         public void CheckIn(int count)
         {
-            if(count <= 0) throw new InvalidOperationException("must have a count greater than 0 to add to inventory");
+            if (count <= 0) throw new InvalidOperationException("must have a count greater than 0 to add to inventory");
             ApplyChange(new ItemsCheckedInToInventory(_id, count));
         }
 
         public void Deactivate()
         {
-            if(!_activated) throw new InvalidOperationException("already deactivated");
+            if (!_activated) throw new InvalidOperationException("already deactivated");
             ApplyChange(new InventoryItemDeactivated(_id));
         }
 
@@ -91,17 +91,17 @@ namespace SimpleCQRS
         private void ApplyChange(Event @event, bool isNew)
         {
             this.AsDynamic().Apply(@event);
-            if(isNew) _changes.Add(@event);
+            if (isNew) _changes.Add(@event);
         }
     }
 
-    public interface IRepository<T> where T : AggregateRoot, new()
+    public interface IRepository
     {
         void Save(AggregateRoot aggregate, int expectedVersion);
-        T GetById(Guid id);
+        T GetById<T>(Guid id) where T : AggregateRoot, new();
     }
 
-    public class Repository<T> : IRepository<T> where T: AggregateRoot, new() //shortcut you can do as you see fit with new()
+    public class Repository : IRepository
     {
         private readonly IEventStore _storage;
 
@@ -115,7 +115,7 @@ namespace SimpleCQRS
             _storage.SaveEvents(aggregate.Id, aggregate.GetUncommittedChanges(), expectedVersion);
         }
 
-        public T GetById(Guid id)
+        public T GetById<T>(Guid id) where T : AggregateRoot, new()
         {
             var obj = new T();//lots of ways to do this
             var e = _storage.GetEventsForAggregate(id);

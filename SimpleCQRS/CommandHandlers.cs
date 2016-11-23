@@ -2,11 +2,15 @@
 
 namespace SimpleCQRS
 {
-    public class InventoryCommandHandlers
+    public class InventoryCommandHandlers :
+        ICommandHandler<CreateInventoryItem>,
+        ICommandHandler<DeactivateInventoryItem>,
+        ICommandHandler<RemoveItemsFromInventory>,
+        ICommandHandler<CheckInItemsToInventory>
     {
-        private readonly IRepository<InventoryItem> _repository;
+        private readonly IRepository _repository;
 
-        public InventoryCommandHandlers(IRepository<InventoryItem> repository)
+        public InventoryCommandHandlers(IRepository repository)
         {
             _repository = repository;
         }
@@ -19,28 +23,28 @@ namespace SimpleCQRS
 
         public void Handle(DeactivateInventoryItem message)
         {
-            var item = _repository.GetById(message.InventoryItemId);
+            var item = _repository.GetById<InventoryItem>(message.InventoryItemId);
             item.Deactivate();
             _repository.Save(item, message.OriginalVersion);
         }
 
         public void Handle(RemoveItemsFromInventory message)
         {
-            var item = _repository.GetById(message.InventoryItemId);
+            var item = _repository.GetById<InventoryItem>(message.InventoryItemId);
             item.Remove(message.Count);
             _repository.Save(item, message.OriginalVersion);
         }
 
         public void Handle(CheckInItemsToInventory message)
         {
-            var item = _repository.GetById(message.InventoryItemId);
+            var item = _repository.GetById<InventoryItem>(message.InventoryItemId);
             item.CheckIn(message.Count);
             _repository.Save(item, message.OriginalVersion);
         }
 
         public void Handle(RenameInventoryItem message)
         {
-            var item = _repository.GetById(message.InventoryItemId);
+            var item = _repository.GetById<InventoryItem>(message.InventoryItemId);
             item.ChangeName(message.NewName);
             _repository.Save(item, message.OriginalVersion);
         }
