@@ -52,10 +52,11 @@ namespace CQRSGui
             bulder.RegisterType<EventStore>().As<IEventStore>().AsImplementedInterfaces();
             bulder.RegisterType<Repository>().As<IRepository>().AsImplementedInterfaces();
 
-            var reg = bulder.RegisterType<InventoryCommandHandlers>().As<InventoryCommandHandlers>().SingleInstance();
+            bulder.RegisterType<InventoryCommandHandlers>().As<InventoryCommandHandlers>().SingleInstance();
 
             var commandService = new CommandService();
             bulder.RegisterInstance<ICommandSender>(commandService).SingleInstance();
+
             IocContainer.RegisterServices(bulder);
 
             commandService.Initialize(new[] { Assembly.Load("SimpleCQRS") });
